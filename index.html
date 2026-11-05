@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth bg-[#08080a] text-zinc-300">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chandan Kumar Tiwari // Production Systems Engineer</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: '#ef233c',
+            'brand-glow': '#d90429',
+            darkcard: '#0f0f13',
+            darkborder: '#1b1b22',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #08080a; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #ef233c; }
+
+    .cyber-grid {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    }
+
+    /* Blueprint inspect bounding box */
+    .blueprint-target {
+      position: relative;
+    }
+    
+    .blueprint-target .blueprint-content {
+      opacity: 0;
+      filter: blur(4px);
+      transition: opacity 0.5s ease 0.5s, filter 0.5s ease 0.5s;
+    }
+
+    .blueprint-target.constructed .blueprint-content {
+      opacity: 1;
+      filter: blur(0px);
+    }
+
+    .blueprint-target .blueprint-box {
+      position: absolute;
+      inset: -4px;
+      border: 1px dashed rgba(0, 240, 255, 0.7);
+      background: rgba(0, 240, 255, 0.02);
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.98);
+      transition: opacity 0.3s ease, transform 0.4s ease;
+      z-index: 30;
+    }
+
+    .blueprint-target.building .blueprint-box {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .blueprint-target.constructed .blueprint-box {
+      opacity: 0;
+      transition: opacity 0.4s ease 0.7s;
+    }
+
+    .blueprint-box::before {
+      content: '+';
+      position: absolute;
+      top: -10px;
+      left: -6px;
+      color: #00f0ff;
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .blueprint-box::after {
+      content: attr(data-dim);
+      position: absolute;
+      bottom: -18px;
+      right: 0;
+      background: #00f0ff;
+      color: #000;
+      font-family: monospace;
+      font-size: 9px;
+      font-weight: bold;
+      padding: 0 4px;
+      border-radius: 2px;
+    }
+
+    #bootScreen {
+      transition: opacity 0.7s ease, visibility 0.7s;
+    }
+    #bootScreen.dismissed {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-brand selection:text-white relative min-h-screen cyber-grid overflow-x-hidden">
+
+  <!-- ==================== 1. PRELOADER INTRO SEQUENCE ==================== -->
+  <div id="bootScreen" class="fixed inset-0 z-[100] bg-[#08080a] flex flex-col items-center justify-center font-mono text-xs">
+    <div class="relative w-48 h-48 flex items-center justify-center mb-6">
+      <div class="absolute inset-0 border border-brand/20 rounded-full animate-ping"></div>
+      <div class="absolute inset-3 border border-dashed border-brand/50 rounded-full animate-spin [animation-duration:8s]"></div>
+      <div class="absolute inset-8 border border-zinc-800 rounded-full animate-spin [animation-duration:4s] [animation-direction:reverse]"></div>
+      
+      <div class="text-center z-10 space-y-1">
+        <span class="inline-block w-2.5 h-2.5 bg-brand animate-pulse"></span>
+        <div id="bootPercent" class="text-white font-bold tracking-widest text-sm">00%</div>
+      </div>
+    </div>
+    
+    <div class="text-zinc-500 text-[11px] space-y-1 text-center">
+      <p id="bootLog" class="text-brand font-medium">// INITIALIZING PRODUCTION TELEMETRY</p>
+      <p class="text-zinc-600">LOC: DAIKIN GREENFIELD // INDIA &bull; TPS KANBAN SYNC</p>
+    </div>
+  </div>
+
+  <!-- ==================== 2. BOID SWARM CANVAS ==================== -->
+  <canvas id="boidCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+  <!-- ==================== 3. TOP TELEMETRY NAVIGATION ==================== -->
+  <header class="fixed top-0 left-0 right-0 z-40 bg-[#08080a]/85 backdrop-blur-md border-b border-darkborder">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between font-mono text-xs">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-brand animate-pulse"></span>
+        <span class="font-bold tracking-widest text-white uppercase">// SYSTEM OPERATIONAL</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-6 text-zinc-400">
+        <a href="#about" class="hover:text-white transition">About</a>
+        <a href="#deployments" class="hover:text-white transition">Assembly Lines</a>
+        <a href="#matrix" class="hover:text-white transition">TPS Matrix</a>
+        <a href="#contact" class="hover:text-brand transition">Contact</a>
+      </nav>
+      <div class="text-[11px] text-zinc-500 hidden sm:block">
+        LOC: <span class="text-zinc-300">IND // +91 9973950227</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 4. MAIN CONTENT ==================== -->
+  <main class="relative z-10 max-w-6xl mx-auto px-6 pt-28 pb-32 space-y-28">
+
+    <!-- HERO SECTION -->
+    <section class="relative">
+      <div class="mb-4">
+        <h1 class="text-6xl sm:text-8xl md:text-9xl font-black tracking-tighter text-[#15151c] select-none uppercase">
+          PORTFOLIO
+        </h1>
+        <div class="-mt-10 sm:-mt-14 md:-mt-20 ml-2">
+          <p class="font-mono text-xs sm:text-sm text-zinc-400">Hello, I'm</p>
+          <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight flex items-baseline gap-2">
+            CHANDAN KUMAR TIWARI<span class="text-brand">.</span>
+          </h2>
+        </div>
+      </div>
+
+      <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand/10 border border-brand/30 rounded text-brand font-mono text-[11px] font-semibold uppercase tracking-wider mb-8">
+        <span class="w-1.5 h-1.5 rounded-full bg-brand"></span>
+        Status: Junior Engineer &bull; Production Line Leader [Daikin Greenfield Plant]
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div class="lg:col-span-7 space-y-6">
+          <p class="text-base sm:text-lg text-zinc-300 font-light leading-relaxed">
+            Leading high-precision mechanical assembly operations with <span class="text-white font-medium">2.8+ years of experience</span> at Daikin Airconditioning India. Specializing in Toyota Production System (TPS) frameworks, micron-tolerance matching, and continuous Kaizen zero-defect manufacturing.
+          </p>
+          
+          <div class="flex flex-wrap gap-4 pt-2 font-mono text-xs">
+            <a href="#deployments" class="px-5 py-2.5 bg-brand hover:bg-brand-glow text-white font-semibold rounded transition shadow-lg shadow-brand/20">
+              OPERATIONAL OVERVIEW &rarr;
+            </a>
+            <a href="#matrix" class="px-5 py-2.5 bg-darkcard hover:bg-zinc-800 border border-darkborder text-zinc-300 rounded transition">
+              EXPLORE TPS SKILLS
+            </a>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 pt-6 border-t border-darkborder font-mono text-xs">
+            <div>
+              <p class="text-zinc-500 text-[10px] uppercase">Shift Manpower</p>
+              <p class="text-base font-bold text-white">30–40 <span class="text-brand text-xs">CREW</span></p>
+            </div>
+            <div>
+              <p class="text-zinc-500 text-[10px] uppercase">Experience</p>
+              <p class="text-base font-bold text-white">2.8+ YRS</p>
+            </div>
+            <div>
+              <p class="text-zinc-500 text-[10px] uppercase">Defect Control</p>
+              <p class="text-base font-bold text-white">L3 / L4 <span class="text-zinc-500 text-xs">POKA-YOKE</span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Red Background Tactical Portrait -->
+        <div class="lg:col-span-5 bg-darkcard border border-darkborder rounded-lg p-4 relative group">
+          <div class="relative aspect-square w-full bg-black rounded border border-zinc-800/80 overflow-hidden flex items-center justify-center">
+            <img 
+              src="" 
+              alt="Chandan Kumar Tiwari" 
+              class="w-full h-full object-cover contrast-110 opacity-95 group-hover:scale-105 transition duration-500"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+            <div class="absolute bottom-3 left-3 right-3 font-mono text-[10px] text-zinc-400 flex justify-between items-center bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded border border-white/10">
+              <span>// LINE LEADER: ONLINE</span>
+              <span class="text-brand font-bold">DAIKIN-OP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BACKGROUND & PHILOSOPHY -->
+    <section id="about" class="pt-6 border-t border-darkborder blueprint-target" data-dim="860x280">
+      <div class="blueprint-box"></div>
+      <div class="blueprint-content">
+        <div class="font-mono text-xs text-brand uppercase tracking-wider mb-1">// 01:00:00 SEC. ABOUT // LINE LEADER SPEC</div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-6">Background &amp; Philosophy</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 text-sm leading-relaxed text-zinc-400">
+          <div class="lg:col-span-8 space-y-4 font-light">
+            <p>
+              Leading daily shift operations across mechanical assembly at Daikin's greenfield compressor plant. Core background in <span class="text-white font-medium">Electrical &amp; Electronics Engineering (Govt. Polytechnic Simdega)</span>, combining hands-on technical troubleshooting with data-driven shop floor leadership.
+            </p>
+            <p class="p-4 bg-darkcard border-l-2 border-brand rounded text-zinc-300 font-mono text-xs">
+              "Eliminate production bottlenecks, enforce strict Poka-Yoke mistake proofing, and ensure 100% daily inventory alignment through pull-based Kanban and Jidoka autonomation."
+            </p>
+          </div>
+
+          <div class="lg:col-span-4 space-y-3 font-mono text-xs">
+            <div class="p-3 bg-darkcard border border-darkborder rounded">
+              <p class="text-white font-semibold mb-1">&#9670; Greenfield Execution</p>
+              <p class="text-zinc-500 text-[11px]">Deploying and stabilizing assembly lines from the ground up to achieve targeted productivity.</p>
+            </div>
+            <div class="p-3 bg-darkcard border border-darkborder rounded">
+              <p class="text-white font-semibold mb-1">&#9670; Precision Matching</p>
+              <p class="text-zinc-500 text-[11px]">Micron-level tolerance verification using Tosok software across crankshafts &amp; cylinders.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORK EXPERIENCE / ASSEMBLY LINE SHOWCASE -->
+    <section id="deployments" class="pt-6 border-t border-darkborder space-y-6">
+      <div>
+        <div class="font-mono text-xs text-brand uppercase tracking-wider mb-1">// INDUSTRIAL DEPLOYMENTS</div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">Production Line Leadership</h2>
+        <p class="text-zinc-400 text-xs font-mono">Real-world manufacturing operations at Daikin Airconditioning India Pvt. Ltd. (Sep 2023 – Present).</p>
+      </div>
+
+      <!-- Main Experience Card -->
+      <div class="bg-darkcard border border-darkborder rounded-lg p-6 hover:border-brand/40 transition blueprint-target" data-dim="1024x240">
+        <div class="blueprint-box"></div>
+        <div class="blueprint-content">
+          <div class="flex flex-wrap justify-between items-start gap-4 mb-3">
+            <div>
+              <span class="font-mono text-[10px] text-brand uppercase font-bold tracking-wider">// CORE ROLE</span>
+              <h3 class="text-xl font-bold text-white mt-1">Junior Engineer &bull; Production Department</h3>
+              <p class="text-xs text-zinc-400 font-mono">Daikin Airconditioning India Pvt. Ltd. &bull; Greenfield Compressor Plant</p>
+            </div>
+            <span class="font-mono text-xs text-zinc-500 border border-darkborder px-2 py-0.5 rounded">SEP 2023 – PRESENT</span>
+          </div>
+          <p class="text-sm text-zinc-400 mb-6 font-light">
+            Directly orchestrating daily shift operations within mechanical assembly. Managing 30–40 line operators, balancing line speed, tracking daily downtime data, maintaining zero inventory mismatch in SAP, and upholding strict Manufacturing Quality (MQ) benchmarks.
+          </p>
+          
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-darkborder/70 font-mono text-xs">
+            <div>
+              <p class="text-zinc-500 text-[10px]">TEAM SUPERVISED</p>
+              <p class="text-white font-semibold">30–40 Operators</p>
+            </div>
+            <div>
+              <p class="text-zinc-500 text-[10px]">TOLERANCE SYSTEM</p>
+              <p class="text-white font-semibold">Tosok Micron Spec</p>
+            </div>
+            <div>
+              <p class="text-zinc-500 text-[10px]">DATA PLATFORM</p>
+              <p class="text-white font-semibold">SAP ERP &bull; Excel</p>
+            </div>
+            <div>
+              <p class="text-zinc-500 text-[10px]">POKA-YOKE</p>
+              <p class="text-brand font-semibold">Level 3 &bull; Level 4</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Specific Core Projects / Sub-Disciplines -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-darkcard border border-darkborder rounded-lg p-5 hover:border-zinc-700 transition blueprint-target" data-dim="490x160">
+          <div class="blueprint-box"></div>
+          <div class="blueprint-content">
+            <span class="font-mono text-[10px] text-brand uppercase font-bold tracking-wider">// 01 &bull; MICRON TOLERANCE MATCHING</span>
+            <h4 class="text-base font-bold text-white mt-1 mb-2">Compressor Mechanical Assembly</h4>
+            <p class="text-xs text-zinc-400 font-light mb-4 leading-relaxed">
+              Precision clearance balancing across crankshafts, pistons, cylinders, and front-head units utilizing dedicated Tosok calibration software.
+            </p>
+            <div class="flex gap-2 font-mono text-[10px] text-zinc-500">
+              <span class="px-2 py-0.5 bg-black rounded border border-darkborder">Tosok</span>
+              <span class="px-2 py-0.5 bg-black rounded border border-darkborder">Tolerance Matching</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-darkcard border border-darkborder rounded-lg p-5 hover:border-zinc-700 transition blueprint-target" data-dim="490x160">
+          <div class="blueprint-box"></div>
+          <div class="blueprint-content">
+            <span class="font-mono text-[10px] text-brand uppercase font-bold tracking-wider">// 02 &bull; AUTOMATION &amp; SPECIAL MACHINES</span>
+            <h4 class="text-base font-bold text-white mt-1 mb-2">Robotic Tooling &amp; Line Balancing</h4>
+            <p class="text-xs text-zinc-400 font-light mb-4 leading-relaxed">
+              Hands-on oversight of special purpose machinery including centering, riveting, industrial robots, and IoT component traceability sensors.
+            </p>
+            <div class="flex gap-2 font-mono text-[10px] text-zinc-500">
+              <span class="px-2 py-0.5 bg-black rounded border border-darkborder">Special Machines</span>
+              <span class="px-2 py-0.5 bg-black rounded border border-darkborder">IoT Traceability</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE SYSTEMS MATRIX (TECHNICAL SKILLS) -->
+    <section id="matrix" class="pt-6 border-t border-darkborder">
+      <div class="font-mono text-xs text-brand uppercase tracking-wider mb-1">// TECHNICAL INDEX</div>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">The Systems Matrix</h2>
+      <p class="text-zinc-400 text-xs font-mono mb-8">Specialized manufacturing frameworks, continuous improvement methodologies, and digital tracking tools.</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-xs">
+        <div class="p-4 bg-darkcard border border-darkborder rounded hover:border-brand/40 transition blueprint-target" data-dim="320x140">
+          <div class="blueprint-box"></div>
+          <div class="blueprint-content">
+            <p class="text-brand text-[10px] font-bold uppercase mb-1">Production Methodology</p>
+            <h5 class="text-white text-sm font-semibold mb-2">Toyota Production System (TPS)</h5>
+            <p class="text-zinc-400 text-[11px] font-sans">Pull-based Kanban signalling, Jidoka autonomation, line balancing, and 6S shop floor discipline.</p>
+          </div>
+        </div>
+
+        <div class="p-4 bg-darkcard border border-darkborder rounded hover:border-brand/40 transition blueprint-target" data-dim="320x140">
+          <div class="blueprint-box"></div>
+          <div class="blueprint-content">
+            <p class="text-brand text-[10px] font-bold uppercase mb-1">Quality Engineering</p>
+            <h5 class="text-white text-sm font-semibold mb-2">Poka-Yoke &amp; Kaizen</h5>
+            <p class="text-zinc-400 text-[11px] font-sans">Implementation of rigid Level 3 &amp; 4 error-proofing control loops and systematic defect reduction initiatives.</p>
+          </div>
+        </div>
+
+        <div class="p-4 bg-darkcard border border-darkborder rounded hover:border-brand/40 transition blueprint-target" data-dim="320x140">
+          <div class="blueprint-box"></div>
+          <div class="blueprint-content">
+            <p class="text-brand text-[10px] font-bold uppercase mb-1">Enterprise Software</p>
+            <h5 class="text-white text-sm font-semibold mb-2">SAP ERP &amp; Tosok Software</h5>
+            <p class="text-zinc-400 text-[11px] font-sans">Daily production logging, material variance reconciliation, downtime analysis, and precision clearance calculation.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT / TRANSMISSION -->
+    <section id="contact" class="pt-12 border-t border-darkborder text-center blueprint-target" data-dim="680x210">
+      <div class="blueprint-box"></div>
+      <div class="blueprint-content">
+        <span class="font-mono text-[11px] text-brand uppercase font-bold tracking-widest">// READY TO ENGAGE</span>
+        <h2 class="text-3xl sm:text-5xl font-extrabold text-white mt-2 mb-4">Let's Optimize High-Precision Operations.</h2>
+        <p class="text-zinc-400 text-sm max-w-md mx-auto mb-8 font-light">
+          Available for advanced manufacturing engineering, assembly line leadership, and production optimization roles.
+        </p>
+
+        <div class="inline-flex flex-col sm:flex-row gap-4 items-center">
+          <a href="mailto:chandantiwary2004@gmail.com" class="px-6 py-3 bg-brand hover:bg-brand-glow text-white font-mono text-xs font-semibold rounded transition shadow
