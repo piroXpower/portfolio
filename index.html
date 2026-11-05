@@ -374,7 +374,7 @@
       </div>
     </section>
 
-    <!-- CONTACT / TRANSMISSION -->
+<!-- CONTACT / TRANSMISSION -->
     <section id="contact" class="pt-12 border-t border-darkborder text-center blueprint-target" data-dim="680x210">
       <div class="blueprint-box"></div>
       <div class="blueprint-content">
@@ -385,4 +385,179 @@
         </p>
 
         <div class="inline-flex flex-col sm:flex-row gap-4 items-center">
-          <a href="mailto:chandantiwary2004@gmail.com" class="px-6 py-3 bg-brand hover:bg-brand-glow text-white font-mono text-xs font-semibold rounded transition shadow
+          <a href="mailto:chandantiwary2004@gmail.com" class="px-6 py-3 bg-brand hover:bg-brand-glow text-white font-mono text-xs font-semibold rounded transition shadow-lg shadow-brand/20">
+            chandantiwary2004@gmail.com
+          </a>
+          <a href="tel:+919973950227" class="px-6 py-3 bg-darkcard hover:bg-zinc-800 border border-darkborder text-zinc-300 font-mono text-xs rounded transition">
+            +91 9973950227
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== 5. FLOATING TELEMETRY HUD DOCK ==================== -->
+  <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-[#0c0c10]/95 backdrop-blur-md border border-darkborder px-4 py-2 rounded-full flex items-center gap-4 text-xs font-mono shadow-2xl">
+    <div class="flex items-center gap-1.5">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+      <span id="fpsCounter" class="text-zinc-300">60 FPS</span>
+    </div>
+    <span class="text-zinc-700">|</span>
+    <div class="text-zinc-400 hidden sm:block">
+      LINE: <span class="text-brand font-semibold">ONLINE</span>
+    </div>
+    <span class="text-zinc-700 hidden sm:block">|</span>
+    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="text-zinc-400 hover:text-white transition">
+      &uarr; TOP
+    </button>
+  </div>
+
+  <!-- ==================== 6. SCRIPTS: PRELOADER, BLUEPRINT OBSERVER, BOIDS ==================== -->
+  <script>
+    // 1. Preloader
+    const bootScreen = document.getElementById('bootScreen');
+    const bootPercent = document.getElementById('bootPercent');
+    const bootLog = document.getElementById('bootLog');
+    let progress = 0;
+    const logs = [
+      "// CONNECTING ASSEMBLY SENSORS",
+      "// MOUNTING TOSOK CALIBRATION",
+      "// SYNCING SAP ERP PRODUCTION",
+      "// LINE READY"
+    ];
+
+    const bootInterval = setInterval(() => {
+      progress += Math.floor(Math.random() * 8) + 4;
+      if (progress > 100) progress = 100;
+      bootPercent.innerText = (progress < 10 ? '0' : '') + progress + '%';
+      
+      const logIdx = Math.min(Math.floor((progress / 100) * logs.length), logs.length - 1);
+      bootLog.innerText = logs[logIdx];
+
+      if (progress >= 100) {
+        clearInterval(bootInterval);
+        setTimeout(() => {
+          bootScreen.classList.add('dismissed');
+        }, 300);
+      }
+    }, 35);
+
+    // 2. Blueprint Wireframe Drawing Animation
+    const blueprintObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.classList.contains('constructed')) {
+          entry.target.classList.add('building');
+          setTimeout(() => {
+            entry.target.classList.add('constructed');
+          }, 450);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.blueprint-target').forEach(el => blueprintObserver.observe(el));
+
+    // 3. Interactive Boid Swarm
+    const canvas = document.getElementById('boidCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    const mouse = { x: -1000, y: -1000 };
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    class Boid {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = (Math.random() - 0.5) * 2;
+        this.maxSpeed = 2.5;
+        this.size = 6;
+      }
+
+      update() {
+        const dx = mouse.x - this.x;
+        const dy = mouse.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 180) {
+          const force = (180 - dist) / 180;
+          this.vx -= (dx / dist) * force * 1.8;
+          this.vy -= (dy / dist) * force * 1.8;
+        }
+
+        const speed = Math.hypot(this.vx, this.vy);
+        if (speed > this.maxSpeed) {
+          this.vx = (this.vx / speed) * this.maxSpeed;
+          this.vy = (this.vy / speed) * this.maxSpeed;
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < 0) this.x = width;
+        if (this.x > width) this.x = 0;
+        if (this.y < 0) this.y = height;
+        if (this.y > height) this.y = 0;
+      }
+
+      draw() {
+        const angle = Math.atan2(this.vy, this.vx);
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(angle);
+
+        ctx.strokeStyle = "rgba(239, 35, 60, 0.4)";
+        ctx.fillStyle = "rgba(239, 35, 60, 0.15)";
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+        ctx.moveTo(this.size, 0);
+        ctx.lineTo(-this.size, -this.size * 0.6);
+        ctx.lineTo(-this.size * 0.5, 0);
+        ctx.lineTo(-this.size, this.size * 0.6);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    const boids = Array.from({ length: 48 }, () => new Boid());
+
+    let lastFrameTime = performance.now();
+    let frameCount = 0;
+    const fpsCounter = document.getElementById('fpsCounter');
+
+    function loop(now) {
+      ctx.clearRect(0, 0, width, height);
+
+      boids.forEach(b => {
+        b.update();
+        b.draw();
+      });
+
+      frameCount++;
+      if (now - lastFrameTime >= 500) {
+        const fps = Math.round((frameCount * 1000) / (now - lastFrameTime));
+        fpsCounter.innerText = `${fps} FPS`;
+        frameCount = 0;
+        lastFrameTime = now;
+      }
+
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
